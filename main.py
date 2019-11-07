@@ -62,24 +62,28 @@ class Game:
         self.board[y] = cells
 
     def print_board(self, stdscr):
+        curr_y, curr_x = curses.getsyx()
         for x in range(self.high):
             for y in range(self.high):
                 c = self.get_char(y, x)
-                stdscr.addstr(x, y, c, curses.A_NORMAL)
+                if x is curr_x and y is curr_y:
+                    stdscr.addstr(y, x, c, curses.A_UNDERLINE)
+                    continue
+                stdscr.addstr(y, x, c, curses.A_NORMAL)
 
     def get_char(self, x, y):
-        cells = self.board[y]
-        if cells[x].is_flagged():
+        cells = self.board[x]
+        if cells[y].is_flagged():
             return "F"
-        elif cells[x].has_opened():
-            if cells[x].hasExploded:
+        elif cells[y].has_opened():
+            if cells[y].hasExploded:
                 return "*"
-            return str(cells[x].neighbours)
+            return str(cells[y].neighbours)
         else:
             return "O"
 
     def generate_bombs(self):
-        for i in range(0, 10):
+        for i in range(int(self.high + (self.high / 2))):
             self.place_bomb()
         self.neighbours()
 
@@ -137,8 +141,20 @@ class Game:
     def open_all_zeros(self):
         for x in range(0, self.high - 1):
             for y in range(0, self.high - 1):
-                if self.board[x][y].neighbours is 0:
+                if self.board[x][y].neighbours is 0 and not self.board[x][y].is_a_bomb():
                     self.board[x][y].open(True)
+
+    def has_exploded(self):
+        for i in range(self.high - 1):
+            for c in self.board[i]:
+                if c.hasExploded:
+                    return True
+
+    def reveal_bombs(self):
+        for x in range(0, self.high - 1):
+            for y in range(0, self.high - 1):
+                if self.board[x][y].is_a_bomb():
+                    self.board[x][y].exploded()
 
 
 def do_something(x, y, c, g):
@@ -231,7 +247,13 @@ def main(stdscr):
         curses.setsyx(curr_y, curr_x)
         print_info(stdscr, g)
         stdscr.refresh()
-
+        if g.has_exploded():
+            g.reveal_bombs()
+            stdscr.clear()
+            print_info(stdscr, g)
+            stdscr.addstr(int(int(rows)/2) - 10, int(int(columns)/2), "Game over!", curses.A_BOLD)
+            stdscr.addstr(int(int(rows)/2) - 9, int(int(columns)/2), "Do you want to play again? (y/n)")
+            stdscr.getkey()
 
 
 if __name__ == "__main__":
