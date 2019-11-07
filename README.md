@@ -28,7 +28,8 @@ q   | quit the program
 - [ ] Center the game and put help and other useful stuff to the right of the board
 
 ## Examples
-![Before the game begins](example.png)
-![When the game has started](example2.png)
-![When you find a bomb and looses](example3.png)
-![When you have opened tiles, flagged tiles and finds a bomb and looses](example4.png)
+![Before entering a size for the board](example.png)
+![Having entered a size for the board](example2.png)
+![Revealed all positions with 0 while playing the game](example3.png)
+![Flagged 2 bombs and revealed numbers around](example4.png)
+![When you hit a bomb you get prompted with a question about playing again](example5.png)
