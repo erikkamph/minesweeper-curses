@@ -66,10 +66,11 @@ class Game:
         for x in range(self.high):
             for y in range(self.high):
                 c = self.get_char(y, x)
+                pair = self.get_color_pair(c)
                 if x is curr_x and y is curr_y:
-                    stdscr.addstr(y, x, c, curses.A_UNDERLINE)
+                    stdscr.addstr(y, x, c, curses.color_pair(16))
                     continue
-                stdscr.addstr(y, x, c, curses.A_NORMAL)
+                stdscr.addstr(y, x, c, curses.color_pair(pair))
 
     def get_char(self, x, y):
         cells = self.board[x]
@@ -81,6 +82,15 @@ class Game:
             return str(cells[y].neighbours)
         else:
             return "O"
+
+    @staticmethod
+    def get_color_pair(c):
+        if c is "F":
+            return 4
+        elif c is "*":
+            return 3
+        else:
+            return 5
 
     def generate_bombs(self):
         for i in range(int(self.high + (self.high / 2))):
@@ -153,8 +163,8 @@ class Game:
     def reveal_bombs(self):
         for x in range(0, self.high - 1):
             for y in range(0, self.high - 1):
-                if self.board[x][y].is_a_bomb():
-                    self.board[x][y].exploded()
+                if self.board[y][x].is_a_bomb():
+                    self.board[y][x].exploded()
 
 
 def do_something(x, y, c, g):
@@ -193,7 +203,7 @@ def print_help(stdscr):
     q = "q - quit the program"
     longest = len(f)
     from_right = int(columns) - longest
-    stdscr.addstr(0, from_right, text, curses.A_BOLD)
+    stdscr.addstr(0, from_right, text, curses.color_pair(2) + curses.A_BOLD)
     stdscr.addstr(1, from_right, w, curses.A_NORMAL)
     stdscr.addstr(2, from_right, a, curses.A_NORMAL)
     stdscr.addstr(3, from_right, s, curses.A_NORMAL)
@@ -202,7 +212,7 @@ def print_help(stdscr):
     stdscr.addstr(6, from_right, r, curses.A_NORMAL)
     stdscr.addstr(7, from_right, q, curses.A_NORMAL)
     curr_y, curr_x = curses.getsyx()
-    stdscr.addstr(8, from_right, "Current position:", curses.A_BOLD)
+    stdscr.addstr(8, from_right, "Current position:", curses.color_pair(2) + curses.A_BOLD)
     stdscr.addstr(9, from_right, "X: " + str(curr_x + 1), curses.A_NORMAL)
     stdscr.addstr(10, from_right, "Y: " + str(curr_y + 1), curses.A_NORMAL)
 
@@ -232,6 +242,14 @@ def welcome(stdscr):
 
 
 def main(stdscr):
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_WHITE, -1)
+    curses.init_pair(2, curses.COLOR_CYAN, -1)
+    curses.init_pair(3, curses.COLOR_RED, -1)
+    curses.init_pair(4, curses.COLOR_BLUE, -1)
+    curses.init_pair(5, curses.COLOR_GREEN, -1)
+    curses.init_pair(16, curses.COLOR_GREEN, curses.COLOR_WHITE)
     curr_x = 0
     curr_y = 0
     size = welcome(stdscr)
