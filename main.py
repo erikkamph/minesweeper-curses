@@ -1,5 +1,6 @@
 import curses
 import os
+import random
 from curses.textpad import Textbox, rectangle
 
 
@@ -22,6 +23,15 @@ class Cell:
 
     def has_opened(self):
         return self.is_opened
+
+    def is_a_bomb(self):
+        return self.hasBomb
+
+    def set_is_bomb(self, b):
+        self.hasBomb = True
+
+    def exploded(self):
+        self.hasExploded = True
 
 
 class Game:
@@ -68,6 +78,68 @@ class Game:
         else:
             return "O"
 
+    def generate_bombs(self):
+        for i in range(0, 10):
+            self.place_bomb()
+        self.neighbours()
+
+    def place_bomb(self):
+        r = random.randint(0, (self.high - 1))
+        c = random.randint(0, (self.high - 1))
+        if self.board[c][r].is_a_bomb():
+            self.place_bomb()
+        else:
+            self.board[c][r].set_is_bomb(True)
+
+    def reveal(self, x, y):
+        self.board[y][x].open(True)
+        if self.board[y][x].is_a_bomb():
+            self.board[y][x].exploded()
+        if self.board[y][x].is_flagged():
+            self.board[y][x].set_flagged(False)
+        if self.board[y][x].neighbours is 0:
+            self.open_all_zeros()
+
+    def neighbours(self):
+        for row in range(0, (self.high - 1)):
+            for col in range(0, (self.high - 1)):
+                self.board[row][col].neighbours = self.calc_neighbours(row, col)
+                print(self.board[row][col].neighbours)
+
+    def calc_neighbours(self, row, col):
+        i = 0
+        if (row - 1) > -1:
+            if col - 1 > -1:
+                if self.board[row-1][col-1].is_a_bomb():
+                    i += 1
+            if col + 1 < self.high - 1:
+                if self.board[row-1][col+1].is_a_bomb():
+                    i += 1
+            if self.board[row-1][col].is_a_bomb():
+                i += 1
+        if col - 1 > -1:
+            if self.board[row][col-1].is_a_bomb():
+                i += 1
+        if col + 1 < self.high - 1:
+            if self.board[row][col+1].is_a_bomb():
+                i += 1
+        if self.high > row + 1:
+            if col - 1 > -1:
+                if self.board[row+1][col-1].is_a_bomb():
+                    i += 1
+            if self.board[row+1][col].is_a_bomb():
+                i += 1
+            if col + 1 < self.high - 1:
+                if self.board[row+1][col+1].is_a_bomb():
+                    i += 1
+        return i
+
+    def open_all_zeros(self):
+        for x in range(0, self.high - 1):
+            for y in range(0, self.high - 1):
+                if self.board[x][y].neighbours is 0:
+                    self.board[x][y].open(True)
+
 
 def do_something(x, y, c, g):
     new_x = x
@@ -89,6 +161,8 @@ def do_something(x, y, c, g):
         g.isGameOver = True
     elif c in ("f", "F"):
         g.put_flag(x, y)
+    elif c in ("r", "R"):
+        g.reveal(x, y)
     return new_x, new_y
 
 
@@ -113,8 +187,8 @@ def print_help(stdscr):
     stdscr.addstr(7, from_right, q, curses.A_NORMAL)
     curr_y, curr_x = curses.getsyx()
     stdscr.addstr(8, from_right, "Current position:", curses.A_BOLD)
-    stdscr.addstr(9, from_right, "X: " + str(curr_x), curses.A_NORMAL)
-    stdscr.addstr(10, from_right, "Y: " + str(curr_y), curses.A_NORMAL)
+    stdscr.addstr(9, from_right, "X: " + str(curr_x + 1), curses.A_NORMAL)
+    stdscr.addstr(10, from_right, "Y: " + str(curr_y + 1), curses.A_NORMAL)
 
 
 def print_info(stdscr, g):
@@ -141,8 +215,9 @@ def main(stdscr):
     curr_x = 0
     curr_y = 0
     size = welcome(stdscr)
-    curses.setsyx(0, 0)
+    curses.setsyx(curr_y, curr_x)
     g = Game(size)
+    g.generate_bombs()
     stdscr.clear()
     print_info(stdscr, g)
     while g.is_game_over() is False:
