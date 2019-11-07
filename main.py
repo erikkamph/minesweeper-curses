@@ -1,6 +1,7 @@
 import curses
 import os
 import random
+import re
 from curses.textpad import Textbox, rectangle
 
 
@@ -89,6 +90,8 @@ class Game:
             return 4
         elif c is "*":
             return 3
+        elif c is "O":
+            return 1
         else:
             return 5
 
@@ -98,8 +101,8 @@ class Game:
         self.neighbours()
 
     def place_bomb(self):
-        r = random.randint(0, (self.high - 1))
-        c = random.randint(0, (self.high - 1))
+        r = random.randint(0, self.high - 1)
+        c = random.randint(0, self.high - 1)
         if self.board[c][r].is_a_bomb():
             self.place_bomb()
         else:
@@ -115,8 +118,8 @@ class Game:
             self.open_all_zeros()
 
     def neighbours(self):
-        for row in range(0, (self.high - 1)):
-            for col in range(0, (self.high - 1)):
+        for row in range(0, self.high):
+            for col in range(0, self.high):
                 self.board[row][col].neighbours = self.calc_neighbours(row, col)
                 print(self.board[row][col].neighbours)
 
@@ -124,33 +127,33 @@ class Game:
         i = 0
         if (row - 1) > -1:
             if col - 1 > -1:
-                if self.board[row-1][col-1].is_a_bomb():
+                if self.board[row - 1][col - 1].is_a_bomb():
                     i += 1
             if col + 1 < self.high - 1:
-                if self.board[row-1][col+1].is_a_bomb():
+                if self.board[row - 1][col + 1].is_a_bomb():
                     i += 1
-            if self.board[row-1][col].is_a_bomb():
+            if self.board[row - 1][col].is_a_bomb():
                 i += 1
         if col - 1 > -1:
-            if self.board[row][col-1].is_a_bomb():
+            if self.board[row][col - 1].is_a_bomb():
                 i += 1
         if col + 1 < self.high - 1:
-            if self.board[row][col+1].is_a_bomb():
+            if self.board[row][col + 1].is_a_bomb():
                 i += 1
         if self.high > row + 1:
             if col - 1 > -1:
-                if self.board[row+1][col-1].is_a_bomb():
+                if self.board[row + 1][col - 1].is_a_bomb():
                     i += 1
-            if self.board[row+1][col].is_a_bomb():
+            if self.board[row + 1][col].is_a_bomb():
                 i += 1
             if col + 1 < self.high - 1:
-                if self.board[row+1][col+1].is_a_bomb():
+                if self.board[row + 1][col + 1].is_a_bomb():
                     i += 1
         return i
 
     def open_all_zeros(self):
-        for x in range(0, self.high - 1):
-            for y in range(0, self.high - 1):
+        for x in range(0, self.high):
+            for y in range(0, self.high):
                 if self.board[x][y].neighbours is 0 and not self.board[x][y].is_a_bomb():
                     self.board[x][y].open(True)
 
@@ -171,16 +174,16 @@ def do_something(x, y, c, g):
     new_x = x
     new_y = y
     n = g.high
-    if c in ("a", "A"):
+    if c in ("a", "A", "KEY_LEFT"):
         if x > 0:
             new_x -= 1
-    elif c in ("s", "S"):
+    elif c in ("s", "S", "KEY_DOWN"):
         if y < (n - 1):
             new_y += 1
-    elif c in ("d", "D"):
+    elif c in ("d", "D", "KEY_RIGHT"):
         if x < (n - 1):
             new_x += 1
-    elif c in ("w", "W"):
+    elif c in ("w", "W", "KEY_UP"):
         if y > 0:
             new_y -= 1
     elif c in ("q", "q"):
@@ -192,17 +195,16 @@ def do_something(x, y, c, g):
     return new_x, new_y
 
 
-def print_help(stdscr):
+def print_help(stdscr, n, c):
     text = "Movement: "
-    w = "w - go up one step"
-    a = "a - go left one step"
-    s = "s - go down one step"
-    d = "d - go right one step"
+    w = "w, up arrow - go up one step"
+    a = "a, left arrow - go left one step"
+    s = "s, down arrow - go down one step"
+    d = "d, right arrow - go right one step"
     f = "f - flag current position"
     r = "r - open current position"
     q = "q - quit the program"
-    longest = len(f)
-    from_right = int(columns) - longest
+    from_right = n + 2
     stdscr.addstr(0, from_right, text, curses.color_pair(2) + curses.A_BOLD)
     stdscr.addstr(1, from_right, w, curses.A_NORMAL)
     stdscr.addstr(2, from_right, a, curses.A_NORMAL)
@@ -215,30 +217,32 @@ def print_help(stdscr):
     stdscr.addstr(8, from_right, "Current position:", curses.color_pair(2) + curses.A_BOLD)
     stdscr.addstr(9, from_right, "X: " + str(curr_x + 1), curses.A_NORMAL)
     stdscr.addstr(10, from_right, "Y: " + str(curr_y + 1), curses.A_NORMAL)
+    stdscr.addstr(11, from_right, "Key: " + c, curses.A_BOLD + curses.color_pair(2))
 
 
-def print_info(stdscr, g):
+def print_info(stdscr, g, c):
     g.print_board(stdscr)
-    print_help(stdscr)
+    print_help(stdscr, g.high, c)
 
 
 def welcome(stdscr):
     string = "Enter a size to use for the board:"
-    startx = int(int(columns) / 2) - len(string)
-    starty = int(int(rows) / 2) - 2
-    stdscr.addstr(starty-1, startx+2, string)
-    stdscr.addstr(starty+3, startx+2, "Help to the right")
-    stdscr.addstr(starty+4, startx+2, "Board on the left")
-    stdscr.addstr(starty+5, startx+2, "Don't make it smaller than 4 by 4")
-    stdscr.addstr(starty+6, startx+2, "Input one value only, not 4x4 or 4*4.")
-    stdscr.addstr(starty+7, startx+2, "Don't make it bigger than number ")
-    stdscr.addstr(starty+8, startx+2, "of rows in terminal! Good Luck!")
-    editwin = curses.newwin(1, len(string), starty+1, startx+1)
-    rectangle(stdscr, starty, startx, starty + 1 + 1, startx + len(string) + 2)
+    stdscr.addstr(0, 1, string)
+    stdscr.addstr(4, 1, "Help to the right side of board")
+    stdscr.addstr(5, 1, "Don't make it smaller than 4 by 4")
+    stdscr.addstr(6, 1, "Input one value only, not 4x4 or 4*4.")
+    stdscr.addstr(7, 1, "Don't make it bigger than number ")
+    stdscr.addstr(8, 1, "of rows in terminal! Good Luck!")
+    editwin = curses.newwin(1, len(string), 2, 1)
+    rectangle(stdscr, 1, 0, 1 + 1 + 1, 1 + len(string))
     stdscr.refresh()
     box = Textbox(editwin)
     box.edit()
-    return int(box.gather())
+    c = box.gather()
+    if re.search("[A-Za-z]+", c) or c is "":  # Test if c contains any character
+        return 0
+    else:  # When c only contains numbers we can send return it
+        return int(c)
 
 
 def main(stdscr):
@@ -252,26 +256,34 @@ def main(stdscr):
     curses.init_pair(16, curses.COLOR_GREEN, curses.COLOR_WHITE)
     curr_x = 0
     curr_y = 0
-    size = welcome(stdscr)
-    curses.setsyx(curr_y, curr_x)
-    g = Game(size)
-    g.generate_bombs()
-    stdscr.clear()
-    print_info(stdscr, g)
-    while g.is_game_over() is False:
-        c = stdscr.getkey()
-        curr_x, curr_y = do_something(curr_x, curr_y, c, g)
-        stdscr.clear()
-        curses.setsyx(curr_y, curr_x)
-        print_info(stdscr, g)
-        stdscr.refresh()
-        if g.has_exploded():
-            g.reveal_bombs()
+    y = "y"
+    while not y in ("n", "N"):
+        size = welcome(stdscr)
+        if size < 4:
             stdscr.clear()
-            print_info(stdscr, g)
-            stdscr.addstr(int(int(rows)/2) - 10, int(int(columns)/2), "Game over!", curses.A_BOLD)
-            stdscr.addstr(int(int(rows)/2) - 9, int(int(columns)/2), "Do you want to play again? (y/n)")
+            stdscr.addstr(0, 0, "It it too small! Restart...", curses.A_BOLD + curses.color_pair(3))
             stdscr.getkey()
+            break
+        curses.setsyx(curr_y, curr_x)
+        g = Game(size)
+        g.generate_bombs()
+        stdscr.clear()
+        print_info(stdscr, g, "")
+        while g.is_game_over() is False:
+            c = stdscr.getkey()
+            if c in ("q", "Q"):
+                y = "N"
+            curr_x, curr_y = do_something(curr_x, curr_y, c, g)
+            stdscr.clear()
+            curses.setsyx(curr_y, curr_x)
+            print_info(stdscr, g, c)
+            stdscr.refresh()
+            if g.has_exploded():
+                g.reveal_bombs()
+                stdscr.clear()
+                stdscr.addstr(5, 8 + len("Game Over!"), "Game Over!", curses.A_BOLD + curses.color_pair(3))
+                stdscr.addstr(6, 8, "Do you want to play again? (y/n)", curses.A_UNDERLINE + curses.color_pair(2))
+                y = stdscr.getkey()
 
 
 if __name__ == "__main__":
