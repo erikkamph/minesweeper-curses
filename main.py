@@ -203,6 +203,10 @@ def welcome(stdscr):
     stdscr.addstr(starty-1, startx+2, string)
     stdscr.addstr(starty+3, startx+2, "Help to the right")
     stdscr.addstr(starty+4, startx+2, "Board on the left")
+    stdscr.addstr(starty+5, startx+2, "Don't make it smaller than 4 by 4")
+    stdscr.addstr(starty+6, startx+2, "Input one value only, not 4x4 or 4*4.")
+    stdscr.addstr(starty+7, startx+2, "Don't make it bigger than number ")
+    stdscr.addstr(starty+8, startx+2, "of rows in terminal! Good Luck!")
     editwin = curses.newwin(1, len(string), starty+1, startx+1)
     rectangle(stdscr, starty, startx, starty + 1 + 1, startx + len(string) + 2)
     stdscr.refresh()
@@ -227,6 +231,7 @@ def main(stdscr):
         curses.setsyx(curr_y, curr_x)
         print_info(stdscr, g)
         stdscr.refresh()
+
 
 
 if __name__ == "__main__":
