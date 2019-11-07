@@ -21,7 +21,7 @@ q   | quit the program
 
 ## TODO
 - [ ] When loosing reveal all bombs in the game.
-- [ ] Have a timer while the game is running
+- [x] Have a timer while the game is running
 - [ ] (Maybe) Accumulate score based on number in the current tile revealed.
 - [ ] Fix better coloring of the program
 - [ ] Implement a way to see if the user has won
