@@ -37,6 +37,7 @@ O | White
 3 | Red
 4 | Red
 F | white f with red background
+
 Curses have a limitation on colors so I have to mix them like ```curses.init_pair(10, curses.COLOR_RED + curses.COLOR_GREEN + curses.COLOR_MAGENTA, -1)```
 where the color combination might make the text black with transparent background which is not so good.
 
