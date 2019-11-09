@@ -14,6 +14,7 @@ class Cell:
         self.is_opened = False
         self.neighbours = 0
         self.flagged_bomb = False
+        self.has_gotten_points = False
 
     def set_flagged(self, b):
         if self.hasBomb:
@@ -66,12 +67,14 @@ class Game:
         return self.isGameOver
 
     def put_flag(self, x, y):
-        if not self.board[y][x].is_flagged():
+        if not self.board[y][x].is_flagged() and not self.board[y][x].has_opened():
             cells = self.board[y]
             if not cells[x].is_flagged():
                 cells[x].set_flagged(True)
             if cells[x].is_a_bomb():
-                self.score += 4
+                if not cells[x].has_gotten_points:
+                    self.score += 4
+                    cells[x].has_gotten_points = True
             self.board[y] = cells
 
     def print_board(self, stdscr):
@@ -123,7 +126,9 @@ class Game:
     def reveal(self, x, y):
         if not self.board[y][x].has_opened():
             self.board[y][x].open(True)
-            self.score += self.board[y][x].neighbours
+            if not self.board[y][x].has_gotten_points:
+                self.score += self.board[y][x].neighbours
+                self.board[y][x].has_gotten_points = True
             if self.board[y][x].is_a_bomb():
                 self.board[y][x].exploded()
             if self.board[y][x].is_flagged():
