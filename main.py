@@ -13,12 +13,18 @@ class Cell:
         self.flagged = False
         self.is_opened = False
         self.neighbours = 0
+        self.flagged_bomb = False
 
     def set_flagged(self, b):
+        if self.hasBomb:
+            self.flagged_bomb = True
         self.flagged = b
 
     def is_flagged(self):
         return self.flagged
+
+    def get_fb(self):
+        return self.flagged_bomb
 
     def open(self, b):
         self.is_opened = b
@@ -41,6 +47,8 @@ class Game:
         self.high = n
         self.isGameOver = False
         self.board = self.create_board()
+        self.score = 0
+        self.nr_bombs = n + int(n/2)
 
     def create_board(self):
         outer = [None] * self.high
@@ -58,10 +66,13 @@ class Game:
         return self.isGameOver
 
     def put_flag(self, x, y):
-        cells = self.board[y]
-        if not cells[x].is_flagged():
-            cells[x].set_flagged(True)
-        self.board[y] = cells
+        if not self.board[y][x].is_flagged():
+            cells = self.board[y]
+            if not cells[x].is_flagged():
+                cells[x].set_flagged(True)
+            if cells[x].is_a_bomb():
+                self.score += 4
+            self.board[y] = cells
 
     def print_board(self, stdscr):
         curr_y, curr_x = curses.getsyx()
@@ -97,7 +108,7 @@ class Game:
             return 5
 
     def generate_bombs(self):
-        for i in range(int(self.high + (self.high / 2))):
+        for i in range(self.nr_bombs):
             self.place_bomb()
         self.neighbours()
 
@@ -110,19 +121,22 @@ class Game:
             self.board[c][r].set_is_bomb(True)
 
     def reveal(self, x, y):
-        self.board[y][x].open(True)
-        if self.board[y][x].is_a_bomb():
-            self.board[y][x].exploded()
-        if self.board[y][x].is_flagged():
-            self.board[y][x].set_flagged(False)
-        if self.board[y][x].neighbours is 0:
-            self.open_all_zeros([(x-1, y), (x+1, y), (x, y-1), (x,y+1), (x-1, y-1), (x+1, y-1), (x-1, y+1), (x+1, y+1)])
+        if not self.board[y][x].has_opened():
+            self.board[y][x].open(True)
+            self.score += self.board[y][x].neighbours
+            if self.board[y][x].is_a_bomb():
+                self.board[y][x].exploded()
+            if self.board[y][x].is_flagged():
+                self.board[y][x].set_flagged(False)
+            if self.board[y][x].neighbours is 0:
+                self.open_all_zeros([(x-1, y), (x+1, y), (x, y-1), (x, y+1)])
 
     def neighbours(self):
         for row in range(0, self.high):
             for col in range(0, self.high):
                 self.board[row][col].neighbours = self.calc_neighbours(row, col)
-                print(self.board[row][col].neighbours)
+                if self.board[row][col].neighbours is not self.calc_neighbours(row, col):
+                    self.board[row][col].neighbours = self.calc_neighbours(row, col)
 
     def calc_neighbours(self, row, col):
         i = 0
@@ -168,10 +182,21 @@ class Game:
                     return True
 
     def reveal_bombs(self):
-        for x in range(0, (self.high - 1)):
-            for y in range(0, (self.high - 1)):
+        for x in range(self.high - 1):
+            for y in range(self.high - 1):
                 if self.board[y][x].is_a_bomb():
                     self.board[y][x].exploded()
+
+    def win(self):
+        i = 0
+        for row in range(self.high - 1):
+            for col in range(self.high - 1):
+                if self.board[row][col].get_fb():
+                    i += 1
+        if i is self.nr_bombs:
+            return True
+        else:
+            return False
 
 
 def do_something(x, y, c, g):
@@ -199,7 +224,7 @@ def do_something(x, y, c, g):
     return new_x, new_y
 
 
-def print_help(stdscr, n, c):
+def print_help(stdscr, score, n):
     text = "Movement: "
     w = "w, up arrow - go up one step"
     a = "a, left arrow - go left one step"
@@ -217,16 +242,18 @@ def print_help(stdscr, n, c):
     stdscr.addstr(5, from_right, f, curses.A_NORMAL)
     stdscr.addstr(6, from_right, r, curses.A_NORMAL)
     stdscr.addstr(7, from_right, q, curses.A_NORMAL)
-    curr_y, curr_x = curses.getsyx()
-    stdscr.addstr(8, from_right, "Current position:", curses.color_pair(2) + curses.A_BOLD)
-    stdscr.addstr(9, from_right, "X: " + str(curr_x + 1), curses.A_NORMAL)
-    stdscr.addstr(10, from_right, "Y: " + str(curr_y + 1), curses.A_NORMAL)
-    stdscr.addstr(11, from_right, "Key: " + c, curses.A_BOLD + curses.color_pair(2))
+    stdscr.addstr(8, from_right, "Score: ", curses.A_BOLD + curses.color_pair(2))
+    stdscr.addstr(8, from_right + len("Score: ") + 2, str(score), curses.A_NORMAL + curses.color_pair(1))
+    # curr_y, curr_x = curses.getsyx()
+    # stdscr.addstr(9, from_right, "Current position:", curses.color_pair(2) + curses.A_BOLD)
+    # stdscr.addstr(10, from_right, "X: " + str(curr_x + 1), curses.A_NORMAL)
+    # stdscr.addstr(11, from_right, "Y: " + str(curr_y + 1), curses.A_NORMAL)
+    # stdscr.addstr(12, from_right, "Key: " + c, curses.A_BOLD + curses.color_pair(2))
 
 
 def print_info(stdscr, g, c):
     g.print_board(stdscr)
-    print_help(stdscr, g.high, c)
+    print_help(stdscr, g.score, g.high)
 
 
 def welcome(stdscr):
@@ -252,6 +279,21 @@ def welcome(stdscr):
         return int(c)
 
 
+def print_end(stdscr, length, g):
+    stdscr.addstr(14, g.high + 2, "Time it took: " + str(length) + "s", curses.color_pair(2))
+    stdscr.addstr(15, g.high + 2, "Do you want to play again?",
+                  curses.A_NORMAL + curses.color_pair(2))
+    stdscr.addstr(16, g.high + 2, "N, n or q quits",
+                  curses.A_NORMAL + curses.color_pair(2))
+    stdscr.addstr(17, g.high + 2, "everything else restarts", curses.A_NORMAL + curses.color_pair(2))
+    stdscr.refresh()
+    y = stdscr.getkey()
+    if y in ("q", "Q"):
+        return "N"
+    else:
+        return y
+
+
 def main(stdscr):
     curses.start_color()
     curses.use_default_colors()
@@ -275,32 +317,27 @@ def main(stdscr):
         stdscr.clear()
         print_info(stdscr, g, "")
         start = time.time()
-        while g.is_game_over() is False:
+        c = ""
+        while not g.is_game_over() and not g.win():
             c = stdscr.getkey()
             if c in ("q", "Q"):
                 y = "N"
                 break
             curr_x, curr_y = do_something(curr_x, curr_y, c, g)
-            stdscr.clear()
             curses.setsyx(curr_y, curr_x)
             print_info(stdscr, g, c)
             stdscr.refresh()
-            if g.has_exploded():
-                end = time.time()
-                length = round(end - start)
-                stdscr.clear()
-                print_info(stdscr, g, c)
-                stdscr.addstr(12, g.high + 2 + len("Game Over!"), "Game Over!", curses.A_BOLD + curses.color_pair(3))
-                stdscr.addstr(13, g.high + 2, "Time it took: " + str(length) + "s", curses.color_pair(2))
-                stdscr.addstr(14, g.high + 2, "Do you want to play again?",
-                              curses.A_UNDERLINE + curses.color_pair(2))
-                stdscr.addstr(15, g.high + 2, "N, n or q quits",
-                              curses.A_UNDERLINE + curses.color_pair(2))
-                stdscr.addstr(16, g.high + 2, "everything else restarts", curses.A_UNDERLINE + curses.color_pair(2))
-                stdscr.refresh()
-                y = stdscr.getkey()
-                if y in ("q", "Q"):
-                    y = "N"
+        end = time.time()
+        length = round(end - start)
+        stdscr.refresh()
+        print_info(stdscr, g, c)
+        if y not in ("n", "N"):
+            if g.win():
+                stdscr.addstr(13, g.high + 2 + len("You won!"), "You won!",
+                              curses.color_pair(5) + curses.A_BOLD + curses.A_BLINK)
+            elif g.has_exploded():
+                stdscr.addstr(13, g.high + 2 + len("Game Over!"), "Game Over!", curses.A_BOLD + curses.color_pair(3))
+            y = print_end(stdscr, length, g)
 
 
 if __name__ == "__main__":
