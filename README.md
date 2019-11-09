@@ -19,13 +19,34 @@ f   | flag current position
 r   | reveal current position
 q   | quit the program
 
-## TODO
-- [ ] When loosing reveal all bombs in the game.
-- [x] Have a timer while the game is running
-- [ ] (Maybe) Accumulate score based on number in the current tile revealed.
+## On the way
 - [ ] Fix better coloring of the program
 - [ ] Implement a way to see if the user has won
+
+### Coloring
+From the beginning there were no colors used,
+currently there are around 11 different color combinations used.
+Current colors are:
+
+Item | Color
+-----|-------
+O | White
+0 | Blue
+1 | Green
+2 | Yellow
+3 | Red
+4 | Red
+F | white f with red background
+Curses have a limitation on colors so I have to mix them like ```curses.init_pair(10, curses.COLOR_RED + curses.COLOR_GREEN + curses.COLOR_MAGENTA, -1)```
+where the color combination might make the text black with transparent background which is not so good.
+
+## TODO
+- [ ] When loosing reveal all bombs in the game.
 - [ ] Center the game and put help and other useful stuff to the right of the board
+
+## Done
+- [x] (Maybe) Accumulate score based on number in the current tile revealed.
+- [x] Have a timer while the game is running
 
 ## Examples
 ![Before entering a size for the board](example.png)

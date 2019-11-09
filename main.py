@@ -83,8 +83,19 @@ class Game:
             for y in range(self.high):
                 c = self.get_char(y, x)
                 pair = self.get_color_pair(c)
+                nb = self.board[y][x].neighbours
                 if x is curr_x and y is curr_y:
                     stdscr.addstr(y, x, c, curses.color_pair(16))
+                    continue
+                if nb > 0 and self.board[y][x].has_opened():
+                    if nb is 1:
+                        stdscr.addstr(y, x, c, curses.color_pair(7))
+                    elif nb is 2:
+                        stdscr.addstr(y, x, c, curses.color_pair(8))
+                    elif nb is 3:
+                        stdscr.addstr(y, x, c, curses.color_pair(9))
+                    else:
+                        stdscr.addstr(y, x, c, curses.color_pair(10))
                     continue
                 stdscr.addstr(y, x, c, curses.color_pair(pair))
 
@@ -139,35 +150,16 @@ class Game:
     def neighbours(self):
         for row in range(0, self.high):
             for col in range(0, self.high):
-                self.board[row][col].neighbours = self.calc_neighbours(row, col)
-                if self.board[row][col].neighbours is not self.calc_neighbours(row, col):
-                    self.board[row][col].neighbours = self.calc_neighbours(row, col)
+                if not self.board[row][col].is_a_bomb():
+                    self.board[row][col].neighbours = self.calc_neighbours(
+                        [(row, col-1), (row-1, col-1), (row+1, col-1), (row+1, col), (row+1, col+1), (row, col+1),
+                         (row-1, col+1), (row-1, col)])
 
-    def calc_neighbours(self, row, col):
+    def calc_neighbours(self, coords):
         i = 0
-        if (row - 1) > -1:
-            if col - 1 > -1:
-                if self.board[row - 1][col - 1].is_a_bomb():
-                    i += 1
-            if col + 1 < self.high - 1:
-                if self.board[row - 1][col + 1].is_a_bomb():
-                    i += 1
-            if self.board[row - 1][col].is_a_bomb():
-                i += 1
-        if col - 1 > -1:
-            if self.board[row][col - 1].is_a_bomb():
-                i += 1
-        if col + 1 < self.high - 1:
-            if self.board[row][col + 1].is_a_bomb():
-                i += 1
-        if self.high > row + 1:
-            if col - 1 > -1:
-                if self.board[row + 1][col - 1].is_a_bomb():
-                    i += 1
-            if self.board[row + 1][col].is_a_bomb():
-                i += 1
-            if col + 1 < self.high - 1:
-                if self.board[row + 1][col + 1].is_a_bomb():
+        for row, col in coords:
+            if -1 < row < self.high and -1 < col < self.high:
+                if self.board[row][col].is_a_bomb():
                     i += 1
         return i
 
@@ -306,7 +298,11 @@ def main(stdscr):
     curses.init_pair(2, curses.COLOR_CYAN, -1)
     curses.init_pair(3, curses.COLOR_RED, -1)
     curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_RED)
-    curses.init_pair(5, curses.COLOR_GREEN, -1)
+    curses.init_pair(5, curses.COLOR_BLUE, -1)
+    curses.init_pair(7, curses.COLOR_GREEN, -1)
+    curses.init_pair(8, curses.COLOR_YELLOW, -1)
+    curses.init_pair(9, curses.COLOR_RED, -1)
+    curses.init_pair(10, curses.COLOR_RED, -1)
     curses.init_pair(16, curses.COLOR_GREEN, curses.COLOR_WHITE)
     y = "y"
     while y not in ("n", "N"):
