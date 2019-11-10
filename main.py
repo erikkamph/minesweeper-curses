@@ -52,6 +52,7 @@ class Game:
         self.nr_bombs = n + int(n/2) + int(n/3)
         self.bomb_locations = []
         self.flags_put = 0
+        self.recursion = 0
 
     def create_board(self):
         outer = [None] * self.high
