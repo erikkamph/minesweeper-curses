@@ -49,8 +49,9 @@ class Game:
         self.isGameOver = False
         self.board = self.create_board()
         self.score = 0
-        self.nr_bombs = n + int(n/2)
+        self.nr_bombs = n + int(n/2) + int(n/3)
         self.bomb_locations = []
+        self.flags_put = 0
 
     def create_board(self):
         outer = [None] * self.high
@@ -72,11 +73,8 @@ class Game:
             cells = self.board[y]
             if not cells[x].is_flagged():
                 cells[x].set_flagged(True)
-            if cells[x].is_a_bomb():
-                if not cells[x].has_gotten_points:
-                    self.score += 4
-                    cells[x].has_gotten_points = True
             self.board[y] = cells
+            self.flags_put += 1
 
     def print_board(self, stdscr):
         curr_y, curr_x = curses.getsyx()
@@ -137,7 +135,7 @@ class Game:
             self.bomb_locations.append((r, c))
 
     def reveal(self, x, y):
-        if not self.board[y][x].has_opened() and not (self.board[y][x].is_a_bomb() and self.board[y][x].is_flagged()):
+        if not self.board[y][x].has_opened():
             self.board[y][x].open(True)
             if not self.board[y][x].has_gotten_points:
                 self.score += self.board[y][x].neighbours
@@ -146,6 +144,7 @@ class Game:
                 self.board[y][x].exploded()
             if self.board[y][x].is_flagged():
                 self.board[y][x].set_flagged(False)
+                self.flags_put -= 1
             if self.board[y][x].neighbours is 0:
                 self.open_all_zeros([(x-1, y), (x+1, y), (x, y-1), (x, y+1)])
 
@@ -175,14 +174,13 @@ class Game:
 
     def win(self):
         i = 0
-        for row in range(self.high - 1):
-            for col in range(self.high - 1):
-                if self.board[row][col].get_fb():
+        for row in range(self.high):
+            for col in range(self.high):
+                if self.board[row][col].has_opened():
                     i += 1
-        if i is self.nr_bombs:
+        if i + self.flags_put is self.high * self.high:
             return True
-        else:
-            return False
+        return False
 
     def loose(self):
         lost = False
