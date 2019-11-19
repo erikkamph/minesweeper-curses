@@ -42,12 +42,13 @@ Curses have a limitation on colors so I have to mix them like ```curses.init_pai
 where the color combination might make the text black with transparent background which is not so good.
 
 ## TODO
-- [ ] When loosing reveal all bombs in the game.
+- [ ] Do something more
 - [ ] Center the game and put help and other useful stuff to the right of the board
 
 ## Done
 - [x] (Maybe) Accumulate score based on number in the current tile revealed.
 - [x] Have a timer while the game is running
+- [x] When loosing reveal all bombs in the game.
 
 ## Examples
 ![Before entering a size for the board](example.png)
