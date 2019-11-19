@@ -71,13 +71,12 @@ class Game:
     def put_flag(self, x, y):
         if not self.board[y][x].is_flagged() and not self.board[y][x].has_opened():
             cells = self.board[y]
-            if not cells[x].is_flagged():
-                cells[x].set_flagged(True)
-            if cells[x].is_a_bomb() and not cells[x].has_gotten_points:
-                self.score += 4
-                cells[x].has_gotten_points = True
+            cells[x].set_flagged(True)
             self.board[y] = cells
             self.flags_put += 1
+        elif self.board[y][x].is_flagged():
+            self.board[y][x].set_flagged(False)
+            self.flags_put -= 1
 
     def print_board(self, stdscr):
         curr_y, curr_x = curses.getsyx()
@@ -138,17 +137,14 @@ class Game:
             self.bomb_locations.append((r, c))
 
     def reveal(self, x, y):
-        if not self.board[y][x].has_opened():
+        if not self.board[y][x].has_opened() and not self.board[y][x].is_flagged():
             self.board[y][x].open(True)
             if not self.board[y][x].has_gotten_points:
                 self.score += self.board[y][x].neighbours
                 self.board[y][x].has_gotten_points = True
             if self.board[y][x].is_a_bomb():
                 self.board[y][x].exploded()
-            if self.board[y][x].is_flagged():
-                self.board[y][x].set_flagged(False)
-                self.flags_put -= 1
-            if self.board[y][x].neighbours == 0:
+            elif self.board[y][x].neighbours == 0:
                 self.open_all_zeros([(x-1, y), (x+1, y), (x, y-1), (x, y+1)])
 
     def neighbours(self):
@@ -170,9 +166,7 @@ class Game:
     def open_all_zeros(self, coords):
         for x, y in coords:
             if -1 < x < self.high and -1 < y < self.high:
-                if self.board[y][x].neighbours == 0 \
-                        and not self.board[y][x].has_opened() \
-                        and not self.board[y][x].is_a_bomb():
+                if not self.board[y][x].has_opened():
                     self.reveal(x, y)
 
     def win(self):
@@ -334,7 +328,8 @@ def main(stdscr):
                               curses.color_pair(5) + curses.A_BOLD + curses.A_BLINK)
             elif g.loose():
                 for r, c in g.bomb_locations:
-                    g.reveal(c, r)
+                    g.board[r][c].open(True)
+                    g.board[r][c].exploded()
                 g.print_board(stdscr)
                 print_help(stdscr, g)
                 stdscr.refresh()
