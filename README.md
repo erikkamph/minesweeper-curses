@@ -19,10 +19,6 @@ f   | flag current position
 r   | reveal current position
 q   | quit the program
 
-## On the way
-- [ ] Fix better coloring of the program
-- [ ] Implement a way to see if the user has won
-
 ### Coloring
 From the beginning there were no colors used,
 currently there are around 11 different color combinations used.
@@ -49,6 +45,8 @@ where the color combination might make the text black with transparent backgroun
 - [x] (Maybe) Accumulate score based on number in the current tile revealed.
 - [x] Have a timer while the game is running
 - [x] When loosing reveal all bombs in the game.
+- [x] Implement a way to see if the user has won
+- [x] Fix better coloring of the program
 
 ## Examples
 ![Before entering a size for the board](example.png)
